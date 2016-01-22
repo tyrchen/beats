@@ -61,6 +61,7 @@ type HTTP struct {
 	SendRequest         bool
 	SendResponse        bool
 	SplitCookie         bool
+	SplitParams         bool
 	HideKeywords        []string
 	RedactAuthorization bool
 
@@ -80,6 +81,7 @@ func (http *HTTP) initDefaults() {
 	http.SendRequest = false
 	http.SendResponse = false
 	http.RedactAuthorization = false
+	http.SplitParams = true
 	http.transactionTimeout = protos.DefaultTransactionExpiration
 }
 
@@ -114,6 +116,10 @@ func (http *HTTP) setFromConfig(config config.Http) (err error) {
 
 	if config.Split_cookie != nil {
 		http.SplitCookie = *config.Split_cookie
+	}
+
+	if config.Split_params != nil {
+		http.SplitParams = *config.Split_params
 	}
 
 	if config.Real_ip_header != nil {
@@ -475,6 +481,13 @@ func (http *HTTP) newTransaction(requ, resp *message) common.MapStr {
 		details["response_headers"] = http.collectHeaders(resp)
 	}
 
+	paramsMap := common.MapStr{}
+	if http.SplitParams {
+		paramsMap = splitParams(params)
+	} else {
+		paramsMap["str"] = params.Encode()
+	}
+
 	event := common.MapStr{
 		"@timestamp":   common.Time(requ.Ts),
 		"type":         "http",
@@ -482,7 +495,7 @@ func (http *HTTP) newTransaction(requ, resp *message) common.MapStr {
 		"responsetime": responseTime,
 		"method":       requ.Method,
 		"path":         path,
-		"params":       params,
+		"params":       paramsMap,
 		"query":        fmt.Sprintf("%s %s", requ.Method, path),
 		"http":         details,
 		"bytes_out":    resp.Size,
@@ -535,6 +548,13 @@ func (http *HTTP) collectHeaders(m *message) interface{} {
 	return hdrs
 }
 
+func splitParams(params url.Values) common.MapStr {
+	paramsMap := common.MapStr{}
+	for key, value := range params {
+		paramsMap[key] = strings.Join(value, ",")
+	}
+	return paramsMap
+}
 func splitCookiesHeader(headerVal string) map[string]string {
 	cookies := map[string]string{}
 
@@ -669,7 +689,7 @@ func (http *HTTP) hideSecrets(values url.Values) url.Values {
 // extractParameters parses the URL and the form parameters and replaces the secrets
 // with the string xxxxx. The parameters containing secrets are defined in http.Hide_secrets.
 // Returns the Request URI path and the (ajdusted) parameters.
-func (http *HTTP) extractParameters(m *message, msg []byte) (path string, params string, err error) {
+func (http *HTTP) extractParameters(m *message, msg []byte) (path string, params url.Values, err error) {
 	var values url.Values
 
 	u, err := url.Parse(string(m.RequestURI))
@@ -679,7 +699,7 @@ func (http *HTTP) extractParameters(m *message, msg []byte) (path string, params
 	values = u.Query()
 	path = u.Path
 
-	paramsMap := http.hideSecrets(values)
+	params = http.hideSecrets(values)
 
 	if m.ContentLength > 0 && bytes.Contains(m.ContentType, []byte("urlencoded")) {
 		values, err = url.ParseQuery(string(msg[m.bodyOffset:]))
@@ -688,10 +708,9 @@ func (http *HTTP) extractParameters(m *message, msg []byte) (path string, params
 		}
 
 		for key, value := range http.hideSecrets(values) {
-			paramsMap[key] = value
+			params[key] = value
 		}
 	}
-	params = paramsMap.Encode()
 
 	if isDetailed {
 		detailedf("Parameters: %s", params)

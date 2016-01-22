@@ -18,10 +18,11 @@ class Test(BaseTest):
 
         assert len(objs) == 1
         o = objs[0]
+        print(o)
         assert o["type"] == "http"
-        assert len(o["params"]) > 0
-        assert o["params"] == "address=anklamerstr.14b&telephon=8932784368&" +\
-                              "user=monica"
+        assert o["params.address"] == "anklamerstr.14b"
+        assert o["params.telephon"] == "8932784368"
+        assert o["params.user"] == "monica"
 
     def test_http_get(self):
         """
@@ -35,5 +36,5 @@ class Test(BaseTest):
         assert len(objs) == 1
         o = objs[0]
         assert o["type"] == "http"
-        assert len(o["params"]) > 0
-        assert o["params"] == "input=packetbeat&src_ip=192.35.243.1"
+        assert o["params.input"] == "packetbeat"
+        assert o["params.src_ip"] == "192.35.243.1"

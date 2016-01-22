@@ -21,8 +21,10 @@ class Test(BaseTest):
 
         assert len(objs) == 1
         o = objs[0]
+        print("hello world!", o)
         assert o["type"] == "http"
-        assert o["params"] == "pass=xxxxx&user=monica"
+        assert o["params.pass"] == "xxxxx"
+        assert o["params.user"] == "monica"
         assert o["path"] == "/login"
         for _, val in o.items():
             if isinstance(val, basestring):
@@ -42,8 +44,11 @@ class Test(BaseTest):
 
         assert len(objs) == 1
         o = objs[0]
+        print("hello world!", o)
         assert o["type"] == "http"
-        assert o["params"] == "pass=xxxxx&user=monica"
+        assert o["params.pass"] == "xxxxx"
+        assert o["params.user"] == "monica"
+
         assert o["path"] == "/login"
         for _, val in o.items():
             if isinstance(val, basestring):
@@ -61,5 +66,9 @@ class Test(BaseTest):
         assert len(objs) == 1
         o = objs[0]
         assert o["type"] == "http"
-        assert o["params"] == "pass=secret&user=monica"
+        assert o["params.pass"] == "secret"
+        assert o["params.user"] == "monica"
+
+
+
         assert o["path"] == "/login"

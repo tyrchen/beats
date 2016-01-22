@@ -70,6 +70,7 @@ type Http struct {
 	Send_all_headers     *bool
 	Send_headers         []string
 	Split_cookie         *bool
+	Split_params         *bool
 	Real_ip_header       *string
 	Include_body_for     []string
 	Hide_keywords        []string

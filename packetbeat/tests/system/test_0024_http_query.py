@@ -34,4 +34,5 @@ class Test(BaseTest):
         o = objs[0]
         assert o["type"] == "http"
         assert o["query"] == "GET /dashboard/transactions"
-        assert o["params"] == "input=packetbeat&src_ip=192.35.243.1"
+        assert o["params.input"] == "packetbeat"
+        assert o["params.src_ip"] == "192.35.243.1"
